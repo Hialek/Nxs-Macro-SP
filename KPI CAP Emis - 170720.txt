@@ -1,0 +1,78 @@
+Sub DATA_Mes()
+Application.ScreenUpdating = False
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+Range("A2").Select
+
+If IsEmpty(ActiveCell.Value) Then
+
+Dim i As Integer
+
+For i = 1 To 44 Step 5
+
+    Sheets("DATA_Q").Select
+    'Obtenemos el fin de los datos a copiar
+    Cells(3, i).Select
+    Selection.End(xlDown).Select
+    finCopia = ActiveCell.Row
+    If ActiveCell.Row < 1000 Then
+        'Copiamos los datos
+        Cells(3, i).Select
+        Range(Selection, Selection.End(xlToRight)).Select
+        Range(Selection, Selection.End(xlDown)).Select
+        Selection.Copy
+        'Los pegamos en la hoja final
+        Sheets("DATA_Mes").Select
+        Range("A2").Select
+    
+        If i > 1 Then
+            'Obtenemos el fin de los datos totales
+            Selection.End(xlDown).Offset(1, 0).Select
+            finDatos = ActiveCell.Row
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+            Selection.End(xlDown).Offset(1, 0).Select
+            finDatos = ActiveCell.Row
+        Else
+            Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+            Selection.End(xlDown).Offset(1, 0).Select
+            finDatos = ActiveCell.Row
+        End If
+    
+        'Escribimos sobre su naturaleza
+        If i < 16 Then
+            Range("E" & finDatos - 1).Select
+            Range(Selection, Selection.End(xlUp).Offset(1, 0)).Select
+            Selection = "Nacional"
+        Else
+            Range("E" & finDatos - 1).Select
+            Range(Selection, Selection.End(xlUp).Offset(1, 0)).Select
+            Selection = "Internacional"
+        End If 'Nacional/Internacional
+        If (i - 1) / 5 Mod 2 = 0 Then
+            Range("F" & finDatos - 1).Select
+            Range(Selection, Selection.End(xlUp).Offset(1, 0)).Select
+            Selection = "SAN"
+        Else
+            Range("F" & finDatos - 1).Select
+            Range(Selection, Selection.End(xlUp).Offset(1, 0)).Select
+            Selection = "ADVICE"
+        End If 'San/Advice
+        GoTo EndLoop
+    End If
+EndLoop:
+        Next i 'Terminamos el ciclo de copias
+       
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+
+ActiveWorkbook.RefreshAll
+Sheets("Resumen").Select
+MsgBox ("Proceso Completo!")
+
+Else
+    MsgBox ("El libro no está vacío: Respalde y elimine la información antes de continuar")
+End If
+
+
+   
+End Sub

@@ -1,0 +1,109 @@
+Sub DATA_Int()
+Application.ScreenUpdating = False
+
+''''''''''''''''''''''''''''''''''''''''''''''
+'Pre-procesando la DATA para trabajar
+''''''''''''''''''''''''''''''''''''''''''''''
+    Sheets("DATA_Int").Select
+    
+    'Quitamos todos los filtros que pudiera haber
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    Range("B3").Select
+
+    'Obteniendo el fin de los datos sobre dato algún dato not null (primer valor vacio)
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+    finDatos = ActiveCell.Row
+    Else
+    Selection.End(xlDown).Select
+    finDatos = ActiveCell.Row
+    End If
+    
+    'Limpiando formulas
+    Range("A" & finDatos + 1, Selection.End(xlDown)).Select
+    Selection.ClearContents
+    Range("I" & finDatos + 1 & ":O" & finDatos + 1).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.ClearContents
+    
+    'Copiando las formulas en el rango
+    Range("A1").Select
+    Selection.Copy
+    Range("A3:A" & finDatos).Select
+    ActiveSheet.Paste
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+
+    Range("I1:O1").Select
+    Selection.Copy
+    Range("I3:O" & finDatos).Select
+    ActiveSheet.Paste
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+
+    'Quitamos los datos repetidos por org+tipo+dia dejando solo una CTA y TAR para cada org al dia
+    ActiveSheet.Range("$A3:$O1048576").RemoveDuplicates Columns:=Array(2, 3, 10), Header:=xlYes
+
+    'Dejamos solo los datos CTA a utilizar
+    Selection.AutoFilter Field:=3, Criteria1:="=CTA"
+
+
+''''''''''''''''''''''''''''''''''''''''''''''
+'Procesando la DATA
+''''''''''''''''''''''''''''''''''''''''''''''
+    Sheets("KRI CAP Bancos").Select
+    
+    'Ciclo que avanza por los emisores
+    For i = 3 To (32 + 3) * Cells(1, 3) Step 36
+        Sheets("KRI CAP Bancos").Select
+        'Guardamos el actual emisor
+        orga = Cells(i, 3)
+        'Filtramos por el actual emisor en la DATA
+        Sheets("DATA_Int").Select
+        Selection.AutoFilter Field:=2, Criteria1:=orga
+        'Seleccionamos rango visible actual
+        
+        Set Rng = Range("A3:J" & finDatos).SpecialCells(xlCellTypeVisible)
+        
+        'Recorremos cada dia de la data en KRI
+        For k = i + 2 To i + 32
+        bandera = 0
+            'Recorremos las diferentes areas
+            For Each Rango In Rng.Areas
+                'Recorremos las filas de las diferentes areas
+                For fila_rango = 1 To Rango.Rows.Count
+                    If Rango.Cells(fila_rango, 10).Value = Sheets("KRI CAP Bancos").Cells(k, 1).Value Then
+                        'MsgBox "Yay " & k & " int " & Rango.Cells(fila_rango, 10).Value & " es igual a " & Sheets("KRI CAP Bancos").Cells(k, 1).Value
+                        Sheets("DATA_Int").Select
+                        Range(Rango.Cells(fila_rango, 1), Rango.Cells(fila_rango, 9)).Copy
+                        Sheets("KRI CAP Bancos").Select
+                        Range(Cells(k, 2), Cells(k, 10)).Select
+                        Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+                        bandera = 1
+                        Exit For
+                    End If
+                Next fila_rango
+                If bandera = 1 Then Exit For
+            Next 'Cierre areas
+                  
+            'Bandera para borrado de las filas sin resultado (para no tener que borrar a mano)
+            If bandera = 0 Then
+            Sheets("KRI CAP Bancos").Select
+            Range(Cells(k, 2), Cells(k, 10)).Select
+            Selection.ClearContents
+            bandera = 0
+            End If
+            
+        Next k
+    
+    Next i 'Terminamos el ciclo de tabla de emisores
+    
+    
+    Sheets("DATA_Int").Select
+    Range("A2").Select
+    'Quitamos todos los filtros que pudiera haber
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    Sheets("KRI CAP Bancos").Select
+    Range("A2").Select
+    Sheets("KRI Banco").Select
+    Range("A1").Select
+ 
