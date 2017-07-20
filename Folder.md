@@ -1,1 +1,0 @@
-Creating Industria Mensual folder
