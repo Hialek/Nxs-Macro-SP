@@ -1,0 +1,303 @@
+Sub Procesamiento()
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Variables hojas dene
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'Cambio Dolar
+Const celdaOrigen_DOL = "B4"
+
+'Inicio denegaciones
+Const celdaOrigen_DEN = "D5"
+
+'Inicio codigos respuesta
+Const celdaOrigen_COD = "K5"
+
+'Inicio codigos PEM
+Const celdaOrigen_PEM = "S5"
+
+'Inicio bines
+Const celdaOrigen_BIN = "W5"
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'PREPROCESAMIENTO
+'En este punto obtenemos los límites y corregimos formatos
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+'OBTENCION DE INFORMACIÓN DE LA HOJA DATA
+'*********************************************************
+
+Sheets("DATA").Activate
+
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+Range("A1").Select
+
+'Realizaremos todo el procedimiento si es que no esta vacio el libro
+If IsEmpty(ActiveCell.Value) Then
+    MsgBox ("El libro está vacío")
+Else
+    'Celda de origen de la tabla
+    Const celdaOrigen = "B2"
+    
+    'Inicializar los rangos de origen y destino
+    Set rngOrigen = Range(celdaOrigen)
+    
+    'Obteniendo la cantidad de filas en DATA
+    rngOrigen.Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+        finDatos = ActiveCell.Row
+    Else
+        Selection.End(xlDown).Select
+        finDatos = ActiveCell.Row
+    End If
+End If
+
+
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+ActiveSheet.Range("A1:Q" & finDatos).AutoFilter Field:=15, Criteria1:="=6", Operator:=xlOr, Criteria2:="=8"
+
+If WorksheetFunction.CountIf(Range("A2:A" & finDatos).Columns(1), "") > 0 Then
+Range("A2:Q" & finDatos).SpecialCells(xlCellTypeVisible).Select
+Selection.EntireRow.Delete
+End If
+
+
+
+'OBTENCION DE INFORMACIÓN DE LA HOJA DENE
+'*********************************************************
+
+Sheets("DENE").Activate
+
+'''''''PARA RAZONES
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+
+'Celda de origen de la tabla
+'Const celdaOrigen_DEN = "B5"
+
+Range(celdaOrigen_DEN).Select
+
+'Realizaremos todo el procedimiento si es que no esta vacio el libro
+If IsEmpty(ActiveCell.Value) Then
+    MsgBox ("No hay denegaciones para comparar")
+Else
+    'Inicializar los rangos de origen y destino
+    Set rngOrigen_DEN = Range(celdaOrigen_DEN)
+
+    'Obteniendo la cantidad de filas en DATA
+    rngOrigen_DEN.Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+        finDatos_Den = ActiveCell.Row
+    Else
+        Selection.End(xlDown).Select
+        finDatos_Den = ActiveCell.Row
+    End If
+End If
+
+'''''''PARA CODIGOS
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+
+'Celda de origen de la tabla
+'Const celdaOrigen_COD = "I5"
+
+Range(celdaOrigen_COD).Select
+
+'Realizaremos todo el procedimiento si es que no esta vacio el libro
+If IsEmpty(ActiveCell.Value) Then
+    MsgBox ("No hay códigos para comparar")
+Else
+    'Inicializar los rangos de origen y destino
+    Set rngOrigen_COD = Range(celdaOrigen_COD)
+
+    'Obteniendo la cantidad de filas en DATA
+    rngOrigen_COD.Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+        finDatos_Cod = ActiveCell.Row
+    Else
+        Selection.End(xlDown).Select
+        finDatos_Cod = ActiveCell.Row
+    End If
+End If
+
+'''''''PARA PEM
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+
+'Celda de origen de la tabla
+'Const celdaOrigen_PEM = "Q5"
+
+Range(celdaOrigen_PEM).Select
+
+'Realizaremos todo el procedimiento si es que no esta vacio el libro
+If IsEmpty(ActiveCell.Value) Then
+    MsgBox ("No hay denegaciones para comparar")
+Else
+    'Inicializar los rangos de origen y destino
+    Set rngOrigen_PEM = Range(celdaOrigen_PEM)
+
+    'Obteniendo la cantidad de filas en DATA
+    rngOrigen_PEM.Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+        finDatos_Pem = ActiveCell.Row
+    Else
+        Selection.End(xlDown).Select
+        finDatos_Pem = ActiveCell.Row
+    End If
+End If
+
+'''''''PARA BIN
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+
+'Celda de origen de la tabla
+'Const celdaOrigen_BIN = "U5"
+
+Range(celdaOrigen_BIN).Select
+
+'Realizaremos todo el procedimiento si es que no esta vacio el libro
+If IsEmpty(ActiveCell.Value) Then
+    MsgBox ("No hay bines para comparar")
+Else
+    'Inicializar los rangos de origen y destino
+    Set rngOrigen_BIN = Range(celdaOrigen_BIN)
+
+    'Obteniendo la cantidad de filas en DATA
+    rngOrigen_BIN.Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+        finDatos_Bin = ActiveCell.Row
+    Else
+        Selection.End(xlDown).Select
+        finDatos_Bin = ActiveCell.Row
+    End If
+End If
+
+
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'PROCESAMIENTO
+'En este punto realizamos los etiquetados de la DATA
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Sheets("DATA").Activate
+
+'Iniciamos ciclo que recorrera cada fila de DATA
+For i = 2 To finDatos Step 1
+
+    'Ciclo de Codigos
+    For d = 5 To finDatos_Cod Step 1
+        dd = Range(celdaOrigen_COD).Column
+        'Buscamos en cada línea hasta encontrar la primera alternativa que haga match
+        Do While IsEmpty(Sheets("DENE").Cells(d, dd).Value) = False And IsEmpty(Range("I" & i).Value)
+            If InStr(1, Range("F" & i), Sheets("DENE").Cells(d, dd).Value) > 0 Then Range("I" & i).Value = Sheets("DENE").Cells(d, Range(celdaOrigen_COD).Column + 6).Value
+            'MsgBox ("Buscando H" & i & " en d: " & d & " dd es: " & dd)
+            dd = dd + 1
+        Loop
+
+        'Si ya encontramos el dato, cortamos el ciclo
+        If IsEmpty(Range("I" & i).Value) = False Then
+            'MsgBox ("Entre porque la razon es: " & Range("H" & i).Value & " para H" & i & " y estaba en Dene(" & d & "," & dd & ")")
+            d = finDatos_Cod
+        End If
+    Next d
+
+    'Ciclo de PEM
+    For d = 5 To finDatos_Pem Step 1
+        If IsEmpty(Range("K" & i).Value) Then
+            comp = Left(Sheets("DENE").Cells(d, Range(celdaOrigen_PEM).Column).Value, InStr(1, Sheets("DENE").Cells(d, Range(celdaOrigen_PEM).Column).Value, "x") - 1)
+            'largo = Len(comp)
+            pem = Left(Range("H" & i), Len(comp))
+            If pem = "" Or pem = " " Then
+                Range("K" & i).Value = "No Presencial"
+            Else:
+                If StrComp(comp, pem) = 0 Then Range("K" & i).Value = Sheets("DENE").Cells(d, Range(celdaOrigen_PEM).Column + 2).Value 'No funciono el elseif
+            End If
+        End If
+    Next d
+
+'Mejora posible: Filtro por celdas vacias, identificar final de datos con filtro especial (solo visibles), realizar recorrido sobre nuevo sub-rango
+
+    'Ciclo de Razones
+    For d = 5 To finDatos_Den Step 1
+        If IsEmpty(Range("I" & i).Value) Then
+            'MsgBox ("Buscando H" & i & " en d: " & d)
+            If InStr(1, Range("G" & i), Sheets("DENE").Cells(d, Range(celdaOrigen_DEN).Column).Value) > 0 And InStr(1, Range("G" & i), Sheets("DENE").Cells(d, Range(celdaOrigen_DEN).Column + 1).Value) > 0 And InStr(1, Range("G" & i), Sheets("DENE").Cells(d, Range(celdaOrigen_DEN).Column + 2).Value) > 0 And InStr(1, Range("G" & i), Sheets("DENE").Cells(d, Range(celdaOrigen_DEN).Column + 3).Value) > 0 And InStr(1, Range("G" & i), Sheets("DENE").Cells(d, Range(celdaOrigen_DEN).Column + 4).Value) > 0 Then Range("I" & i).Value = Sheets("DENE").Cells(d, Range(celdaOrigen_DEN).Column + 5).Value
+            'Range("K" & i).Value = "Vacio"
+        Else
+            'MsgBox ("Entre porque la razon es: " & Range("H" & i).Value & " para H" & i & " y estaba en Dene(" & d & ",algo)")
+            d = finDatos_Den
+        End If
+    Next d
+
+    'Clasificacion Autorizada Denegada
+    If IsEmpty(Range("J" & i).Value) Then
+        If InStr(1, Range("I" & i), "AUTORIZADA") > 0 Then
+            Range("J" & i).Value = "AUTORIZADA"
+        Else:
+            Range("J" & i).Value = "DENEGADO"
+        End If
+    End If
+
+    'Ciclo de Bines
+    For d = 5 To finDatos_Bin Step 1
+        If IsEmpty(Range("L" & i).Value) Then
+            If InStr(1, Range("D" & i), Sheets("DENE").Cells(d, Range(celdaOrigen_BIN).Column).Value) > 0 Then Range("L" & i).Value = Sheets("DENE").Cells(d, Range(celdaOrigen_BIN).Column + 2).Value
+        Else
+            d = finDatos_Bin
+        End If
+    Next d
+
+    'Clasificacion Nacional Internacional
+    If IsEmpty(Range("M" & i).Value) Then
+        If InStr(1, Range("E" & i), "152") > 0 Or IsEmpty(Range("E" & i).Value) Or Range("E" & i).Value = "   " Then
+            Range("M" & i).Value = "Nacional (CLP)"
+        Else:
+            Range("M" & i).Value = "Internacional (USD)"
+        End If
+    End If
+
+    'Clasificacion POS ATM
+    If IsEmpty(Range("N" & i).Value) Then
+        If InStr(1, Range("A" & i), "EQ") > 0 Then
+            Range("N" & i).Value = "ATM"
+        Else:
+            Range("N" & i).Value = "POS"
+        End If
+    End If
+
+    'Clasificacion POS ATM
+    If IsEmpty(Range("O" & i).Value) Then Range("O" & i).Value = Left(Range("D" & i).Value, 1)
+
+    'Clasificacion MARCA
+    If IsEmpty(Range("P" & i).Value) Then
+        If InStr(1, Range("O" & i), "3") > 0 Then
+            Range("P" & i).Value = "Amex"
+        Else:
+            If InStr(1, Range("O" & i), "4") > 0 Then
+                Range("P" & i).Value = "Visa"
+            Else:
+                Range("P" & i).Value = "Mastercard"
+            End If
+        End If
+    End If
+
+    'Cambio Moneda
+    If IsEmpty(Range("Q" & i).Value) Then
+        If Range("E" & i) = 152 Then
+            Range("Q" & i).Value = Range("C" & i).Value / Sheets("DENE").Range(celdaOrigen_DOL).Value
+        Else:
+            Range("Q" & i).Value = Range("C" & i).Value
+        End If
+    End If
+
+
+Next i
+
+'Quitamos todos los filtros que pudiera haber
+If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+Range("A1").Select
+
+End Sub
+
