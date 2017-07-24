@@ -66,7 +66,7 @@ SET		@Temp				=	'20'+SUBSTRING(CONVERT(VARCHAR(12),@Final_Incidente),1,2) +
 SET  @T_SAFS				=	CAST(convert(varchar, DateADD(HH, @Desfase_SAF, @Temp), 12) + replace(convert(varchar, DateADD(HH, @Desfase_SAF, @Temp), 108), ':', '') as bigint  )
 SET  @T_Reintento			=	CAST(convert(varchar, DateADD(HH, @Desfase_Reintento, @Temp), 12) + replace(convert(varchar, DateADD(HH, @Desfase_Reintento, @Temp), 108), ':', '') as bigint  )
 
------------------------GENERACIÓN DE LA DATA -----------------------
+-----------------------GENERACIÃ“N DE LA DATA -----------------------
 
 --TABLA CON DATA DEL INCIDENTE
 INSERT INTO @DATA
@@ -110,7 +110,7 @@ INSERT INTO @DATA
 
 	IIF(codrsp in ('00','85'),'Aut','Den') rNexus
 
-	from IsoNxs.dbo.journal (nolock)
+	from INGRESAR_BD (nolock)
 	where tiempoauth>=@Inicio_Incidente and tiempoauth<@Final_Incidente
 	and ( (ctran = '120' and ( charindex(',102',bloqueo)>0 or charindex(',111',bloqueo)>0  or charindex(',113',bloqueo)>0 or charindex(',109',bloqueo)>0 )) or (ctran = '220' and charindex(',p,',bloqueo)>0) or (ctran = '120' and ( charindex(',9001',bloqueo)>0 or charindex(',9020',bloqueo)>0  or charindex(',9011',bloqueo)>0 )) or (ctran in (1120,1220)) or (ctran in ('220') and rubro in ('6011')))
 
@@ -133,7 +133,7 @@ INSERT INTO @Totales
 	count(CASE WHEN (tiempoauth>=@Inicio_Incidente and tiempoauth<@T_SAFS) and ctran = '120' and ( charindex(',102',bloqueo)>0 or charindex(',111',bloqueo)>0  or charindex(',113',bloqueo)>0 or charindex(',109',bloqueo)>0 ) THEN 1 END) as MC_S,
 	count(CASE WHEN (tiempoauth>=@Inicio_Incidente and tiempoauth<@T_SAFS) and ctran in (1120,1220) THEN 1 END) as AMEX_S
 
-	from IsoNxs.dbo.journal (nolock)
+	from INGRESAR_BD (nolock)
 	where tiempoauth>=@Inicio_Incidente and tiempoauth<@T_SAFS
 	GROUP BY organizacion
 
@@ -162,7 +162,7 @@ FROM
 left join
 		(
 			select tiempoauth,pan
-			from IsoNxs.dbo.journal (nolock)
+			from INGRESAR_BD (nolock)
 			where tiempoauth>=@Inicio_Incidente and tiempoauth<@T_Reintento
 			and ctran in ('0100','0200')
 		) as A
