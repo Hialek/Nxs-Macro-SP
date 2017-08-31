@@ -1,0 +1,228 @@
+Sub no_procesadores()
+
+''''''''''''''''''''''''''''''''''''''''''''
+'Obtencion de datos para fecha
+''''''''''''''''''''''''''''''''''''''''''''
+'Validacion de datos
+Sheets("INICIO").Select
+If IsEmpty(Range("H11").Value) Then
+    MsgBox ("Debe seleccionar un año")
+    End
+Else
+    If IsEmpty(Range("I11").Value) Then
+        MsgBox ("Debe seleccionar un mes")
+        End
+    End If
+End If
+
+'Obtencion de la fecha de inicio en formato tiempoauth
+fecha_inicio = CStr(Right(Range("H11"), 2) & Range("I11") & "01000000")
+
+
+'Obtencion de la fecha de termino de forma automática (si es diciembre, aumente el año en 1 y el mes es 01)
+If Range("I11") + 1 > 12 Then
+    fecha_fin = CStr((Right(Range("H11"), 2) + 1) & "0101000000")
+Else
+    If Range("I11") + 1 < 10 Then
+        fecha_fin = CStr(Right(Range("H11"), 2) & "0" & (Range("I11") + 1) & "01000000")
+    Else
+        fecha_fin = CStr(Right(Range("H11"), 2) & (Range("I11") + 1) & "01000000")
+    End If
+End If
+
+''''''''''''''''''''''''''''''''''''''''''''''
+'Limpiando Datos previos
+''''''''''''''''''''''''''''''''''''''''''''''
+    Sheets("DATA").Select
+    'Quitamos todos los filtros que pudiera haber
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    Range("B3").Select
+
+    'Obteniendo el fin de los datos sobre dato algún dato not null (primer valor vacio)
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+    finDatos = ActiveCell.Row
+    Else
+    Selection.End(xlDown).Select
+    finDatos = ActiveCell.Row
+    End If
+    
+    'Limpiando formulas
+    Range("A3", "O" & finDatos).Select
+    'Range("A" & finDatos, Selection.End(xlDown)).Select
+    Selection.ClearContents
+    
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'OBTENCION DE CARGAS DESDE LAS BASES DE DATOS
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+    'Declare variables'
+        Set Conn1 = New ADODB.Connection
+        Set Query1 = New ADODB.Command
+        Set Res1 = New ADODB.Recordset
+        
+        Set Conn2 = New ADODB.Connection
+        Set Query2 = New ADODB.Command
+        Set Query3 = New ADODB.Command
+        Set Res2 = New ADODB.Recordset
+        Set Res3 = New ADODB.Recordset
+        
+        
+'QueryA = "Select Emisor F FROM IsoNxs.dbo.Tbl_Orga_PCarga where FechaCarga>=170701000000 and FechaCarga<170801000000"
+
+QueryA = _
+ "SELECT Emisor,Tipo,isnull(null,'') as GenActual,isnull(null,'') as GenSwitch,FechaCarga,RegSwitch,isnull(null,'') as '1er Registro' " & _
+ "FROM IsoNxs.dbo.Tbl_Orga_PCarga where FechaCarga>='" & CStr(fecha_inicio) & "'and FechaCarga<'" & CStr(fecha_fin) & "'" & _
+ " and emisor in (select organizacion from IsoNxs.dbo.journal nolock)" & _
+ " and emisor not in (0,601,603,628)" & _
+ "order by Emisor, Fecha desc"
+
+QueryB = _
+ "SELECT Emisor,Tipo,GenActual,GenSwitch,FechaCarga,Registros as RegSwitch,Top1Reg as '1er Registro'" & _
+ "FROM imperial.isonet.dbo.orga_Historia where FechaCarga>='" & CStr(fecha_inicio) & "'and FechaCarga<'" & CStr(fecha_fin) & "'" & _
+ "order by Emisor, Fecha desc"
+ 
+QueryC = _
+ "SELECT Emisor,Tipo,GenActual,GenSwitch,FechaCarga,Registros as RegSwitch,Top1Reg as '1er Registro'" & _
+ "FROM san02.isonetsmu.dbo.orga_Historia where FechaCarga>='" & CStr(fecha_inicio) & "'and FechaCarga<'" & CStr(fecha_fin) & "'" & _
+ "order by Emisor, Fecha desc"
+ 
+    'Open Connection'
+        'Conexion Isonxs
+        Conn1.ConnectionString = "Provider=SQLOLEDB;Data Source=" & Sheets(1).Range("D1").Value & ";User ID=intope_web;Password=" & Sheets(1).Range("F1").Value & ";"
+        Conn1.Open
+        'Conexion Nuevo Totoral
+        Conn2.ConnectionString = "Provider=SQLOLEDB;Data Source=" & Sheets(1).Range("H1").Value & ";User ID=usr_bcpnew;Password=" & Sheets(1).Range("J1").Value & ";"
+        Conn2.Open
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+'       OBTENIENDO DATOS DESDE EL ISONXS
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+    'Set and Excecute SQL Command'
+        Set Query1.ActiveConnection = Conn1
+        Query1.CommandText = QueryA
+        Query1.Execute
+    'Open Recordset'
+        Set Res1.ActiveConnection = Conn1
+        Res1.Open Query1
+    'Copy Data to Excel'
+        ActiveSheet.Range("B3").CopyFromRecordset (Res1)
+    'Cerramos conexion IsoNxs
+        Conn1.Close
+
+
+    'Obteniendo el fin de los datos sobre dato algún dato not null (primer valor vacio)
+    Range("B3").Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+    finDatos = ActiveCell.Row
+    Else
+    Selection.End(xlDown).Select
+    finDatos = ActiveCell.Row + 1
+    End If
+    
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+'       OBTENIENDO DATOS DESDE EL ISONETCAT
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+    'Set and Excecute SQL Command'
+        Set Query2.ActiveConnection = Conn2
+        Query2.CommandText = QueryB
+        Query2.Execute
+    'Open Recordset'
+        Set Res2.ActiveConnection = Conn2
+        Res2.Open Query2
+    'Copy Data to Excel'
+        ActiveSheet.Range("B" & finDatos).CopyFromRecordset (Res2)
+ 
+    'Obteniendo el fin de los datos sobre dato algún dato not null (primer valor vacio)
+    Range("B3").Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+    finDatos = ActiveCell.Row
+    Else
+    Selection.End(xlDown).Select
+    finDatos = ActiveCell.Row + 1
+    End If
+        
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+'       OBTENIENDO DATOS DESDE EL ISONETSMU
+'''''''''''''''''''''''''''''''''''''''''''''''''''
+    'Set and Excecute SQL Command'
+        Set Query3.ActiveConnection = Conn2
+        Query3.CommandText = QueryC
+        Query3.Execute
+    'Open Recordset'
+        Set Res3.ActiveConnection = Conn2
+        Res3.Open Query3
+    'Copy Data to Excel'
+        ActiveSheet.Range("B" & finDatos).CopyFromRecordset (Res3)
+             
+    Conn2.Close
+    
+    'Obteniendo el fin de los datos sobre dato algún dato not null (primer valor vacio)
+    Range("B3").Select
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+    finDatos = ActiveCell.Row
+    Else
+    Selection.End(xlDown).Select
+    finDatos = ActiveCell.Row + 1
+    End If
+    
+    'Formateando columna emisores (usamos FormulaR1C1 para evitar reconocimiento de las fórmulas)
+    Range("B3:B" & finDatos).FormulaR1C1 = Range("B3:B" & finDatos).Value
+    
+''''''''''''''''''''''''''''''''''''''''''''''
+'Pre-procesando la DATA para trabajar
+''''''''''''''''''''''''''''''''''''''''''''''
+    Sheets("DATA").Select
+    
+    'Quitamos todos los filtros que pudiera haber
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    Range("B3").Select
+
+    'Obteniendo el fin de los datos sobre dato algún dato not null (primer valor vacio)
+    If IsEmpty(ActiveCell.Offset(1, 0).Value) Then
+    finDatos = ActiveCell.Row
+    Else
+    Selection.End(xlDown).Select
+    finDatos = ActiveCell.Row
+    End If
+    
+    'Limpiando formulas
+    Range("A" & finDatos + 1, Selection.End(xlDown)).Select
+    Selection.ClearContents
+    Range("I" & finDatos + 1 & ":O" & finDatos + 1).Select
+    Range(Selection, Selection.End(xlDown)).Select
+    Selection.ClearContents
+    
+    'Copiando las formulas en el rango
+    Range("A1").Select
+    Selection.Copy
+    Range("A3:A" & finDatos).Select
+    ActiveSheet.Paste
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+
+    Range("I1:O1").Select
+    Selection.Copy
+    Range("I3:O" & finDatos).Select
+    ActiveSheet.Paste
+    Selection.Copy
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+
+    'Quitamos los datos repetidos por org+tipo+dia dejando solo una CTA y TAR para cada org al dia
+    ActiveSheet.Range("$A3:$O1048576").RemoveDuplicates Columns:=Array(2, 3, 10), Header:=xlYes
+
+    'Dejamos solo los datos CTA a utilizar
+    Selection.AutoFilter Field:=3, Criteria1:="=CTA"
+    
+    'Quitamos todos los filtros que pudiera haber
+    If ActiveSheet.FilterMode Then ActiveSheet.ShowAllData
+    
+    Range("A2").Select
+    
+    Sheets("TD").Select
+    ActiveWorkbook.RefreshAll
+    Sheets("Noprocesadores").Select
+    Range("B2").Select
+    
+    MsgBox ("Proceso Completado!")
+    
+End Sub
